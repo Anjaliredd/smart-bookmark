@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔖 Smart Bookmark
 
-## Getting Started
+A personal bookmark manager built with Next.js, Supabase, and Tailwind CSS.
 
-First, run the development server:
+## Live URL
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+[https://smart-bookmark-em2h.vercel.app](https://smart-bookmark-em2h.vercel.app)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## GitHub Repo
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+[https://github.com/Anjaliredd/smart-bookmark](https://github.com/Anjaliredd/smart-bookmark)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Features
 
-## Learn More
+- Google OAuth sign-in (no email/password)
+- Add bookmarks with a title and URL
+- Delete bookmarks
+- Bookmarks are private — each user only sees their own
+- Real-time sync across browser tabs (powered by BroadcastChannel API + Supabase Realtime)
 
-To learn more about Next.js, take a look at the following resources:
+## Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Next.js 16** (App Router)
+- **Supabase** (Authentication, PostgreSQL Database, Realtime subscriptions)
+- **Tailwind CSS** for styling
+- **Vercel** for deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## How to Run Locally
 
-## Deploy on Vercel
+1. Clone the repo
+2. Run `npm install`
+3. Create a `.env.local` with your Supabase URL and anon key:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=your-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-key
+   ```
+4. Run `npm run dev`
+5. Open `http://localhost:3000`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Problems I Ran Into & How I Solved Them
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 1. Google OAuth redirect not working
+After deploying to Vercel, Google sign-in would fail with a redirect mismatch error.
+**Solution:** I had to add my Supabase callback URL (`https://xxx.supabase.co/auth/v1/callback`) to the authorized redirect URIs in Google Cloud Console AND add my Vercel URL to the Supabase redirect allowlist under Authentication → URL Configuration.
+
+### 2. Bookmarks not appearing in real-time
+After adding a bookmark, it wouldn't appear in the list without a page refresh. Supabase Realtime postgres_changes events were not firing despite the subscription showing as "SUBSCRIBED".
+**Solution:** I implemented a dual approach — using the browser's BroadcastChannel API for same-browser cross-tab sync, while keeping Supabase Realtime as a fallback. When a bookmark is added or deleted, a message is posted to the BroadcastChannel, and all listening tabs refresh their bookmark list.
+
+### 3. Other users could see my bookmarks
+Initially I forgot to enable Row Level Security (RLS) on the bookmarks table.
+**Solution:** I added RLS policies that restrict SELECT, INSERT, and DELETE operations to rows where `user_id` matches the authenticated user's ID (`auth.uid()`).
+
+### 4. Input text not visible
+The text color in the bookmark form inputs was too similar to the background, making typed text invisible.
+**Solution:** I explicitly set `text-slate-900` and `bg-white` on the input fields, along with `placeholder:text-slate-400` for placeholder text contrast.
