@@ -16,7 +16,7 @@ A personal bookmark manager built with Next.js, Supabase, and Tailwind CSS.
 - Add bookmarks with a title and URL
 - Delete bookmarks
 - Bookmarks are private — each user only sees their own
-- Real-time sync across browser tabs (powered by BroadcastChannel API + Supabase Realtime)
+- Real-time sync across browser tabs
 
 ## Tech Stack
 
@@ -44,8 +44,9 @@ After deploying to Vercel, Google sign-in would fail with a redirect mismatch er
 **Solution:** I had to add my Supabase callback URL (`https://xxx.supabase.co/auth/v1/callback`) to the authorized redirect URIs in Google Cloud Console AND add my Vercel URL to the Supabase redirect allowlist under Authentication → URL Configuration.
 
 ### 2. Bookmarks not appearing in real-time
-After adding a bookmark, it wouldn't appear in the list without a page refresh. Supabase Realtime postgres_changes events were not firing despite the subscription showing as "SUBSCRIBED".
-**Solution:** I implemented a dual approach — using the browser's BroadcastChannel API for same-browser cross-tab sync, while keeping Supabase Realtime as a fallback. When a bookmark is added or deleted, a message is posted to the BroadcastChannel, and all listening tabs refresh their bookmark list.
+After adding a bookmark, it wouldn't appear in the list without a page refresh.
+**Solution:** I enabled Supabase Realtime by adding the bookmarks table to the `supabase_realtime` publication using `ALTER PUBLICATION supabase_realtime ADD TABLE public.bookmarks;` and set `ALTER TABLE public.bookmarks REPLICA IDENTITY FULL;` in the SQL editor. I also subscribed to `postgres_changes` events in the BookmarkList component so that any INSERT or DELETE is reflected instantly across all open tabs.
+
 
 ### 3. Other users could see my bookmarks
 Initially I forgot to enable Row Level Security (RLS) on the bookmarks table.
